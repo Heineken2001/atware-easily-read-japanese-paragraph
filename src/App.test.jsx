@@ -110,7 +110,9 @@ describe("App", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /phân tích/i }));
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /hiện furigana/i })).toBeInTheDocument(),
+      expect(
+        screen.getByRole("button", { name: /hiện furigana/i }),
+      ).toBeInTheDocument(),
     );
     fireEvent.click(screen.getByRole("button", { name: /hiện furigana/i }));
     expect(document.querySelector("rt")?.textContent).toBe("にほんご");
