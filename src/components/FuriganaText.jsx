@@ -1,4 +1,4 @@
-export default function FuriganaText({ tokens, vocabulary, grammar, onWordClick, onGrammarClick }) {
+export default function FuriganaText({ tokens, vocabulary, grammar, onWordClick, onGrammarClick, showFurigana = false }) {
   const vocabMap = Object.fromEntries(vocabulary.map(v => [v.id, v]))
 
   function handleClick(e, token) {
@@ -21,7 +21,7 @@ export default function FuriganaText({ tokens, vocabulary, grammar, onWordClick,
           token.grammarId ? 'underline decoration-orange-500' : '',
         ].filter(Boolean).join(' ')
 
-        if (token.reading) {
+        if (token.reading && showFurigana) {
           return (
             <ruby key={i} className={classes} onClick={isClickable ? e => handleClick(e, token) : undefined}>
               {token.text}

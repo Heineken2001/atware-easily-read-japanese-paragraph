@@ -17,6 +17,7 @@ vi.mock("openai", () => ({
 }));
 
 const mockResult = {
+  translation: "Tôi đang học tiếng Nhật.",
   tokens: [
     { text: "日本語", reading: "にほんご", wordId: "w1", grammarId: null },
     { text: "を", reading: null, wordId: null, grammarId: null },
@@ -92,15 +93,27 @@ describe("App", () => {
     });
   });
 
-  it("renders furigana text after successful analysis", async () => {
+  it("keeps furigana hidden by default after successful analysis", async () => {
+    render(<App />);
+    fireEvent.change(screen.getByPlaceholderText(/nhập đoạn văn/i), {
+      target: { value: "日本語" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /phân tích/i }));
+    await waitFor(() => expect(screen.getByText("日本語")).toBeInTheDocument());
+    expect(document.querySelectorAll("rt")).toHaveLength(0);
+  });
+
+  it("shows furigana when the toggle is enabled", async () => {
     render(<App />);
     fireEvent.change(screen.getByPlaceholderText(/nhập đoạn văn/i), {
       target: { value: "日本語" },
     });
     fireEvent.click(screen.getByRole("button", { name: /phân tích/i }));
     await waitFor(() =>
-      expect(document.querySelector("rt")?.textContent).toBe("にほんご"),
+      expect(screen.getByRole("button", { name: /hiện furigana/i })).toBeInTheDocument(),
     );
+    fireEvent.click(screen.getByRole("button", { name: /hiện furigana/i }));
+    expect(document.querySelector("rt")?.textContent).toBe("にほんご");
   });
 
   it("shows Có lỗi xảy ra on generic failure", async () => {
@@ -137,6 +150,17 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: /phân tích/i }));
     await waitFor(() => screen.getByText("tiếng Nhật"));
     expect(screen.getByText("tiếng Nhật")).toBeInTheDocument();
+  });
+
+  it("renders the paragraph translation after analysis", async () => {
+    render(<App />);
+    fireEvent.change(screen.getByPlaceholderText(/nhập đoạn văn/i), {
+      target: { value: "日本語をしています" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /phân tích/i }));
+    await waitFor(() =>
+      expect(screen.getByText("Tôi đang học tiếng Nhật.")).toBeInTheDocument(),
+    );
   });
 
   it("switches to Ngữ pháp tab when grammar token is clicked", async () => {

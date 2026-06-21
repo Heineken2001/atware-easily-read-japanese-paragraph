@@ -19,14 +19,20 @@ describe('FuriganaText', () => {
   })
 
   it('renders furigana reading in rt tag above kanji token', () => {
-    render(<FuriganaText tokens={tokens} vocabulary={vocabulary} grammar={grammar} onWordClick={() => {}} onGrammarClick={() => {}} />)
+    render(<FuriganaText tokens={tokens} vocabulary={vocabulary} grammar={grammar} onWordClick={() => {}} onGrammarClick={() => {}} showFurigana />)
     expect(screen.getByText('にほんご')).toBeInTheDocument()
     expect(document.querySelector('rt').textContent).toBe('にほんご')
   })
 
   it('only renders rt tags for tokens with reading', () => {
-    render(<FuriganaText tokens={tokens} vocabulary={vocabulary} grammar={grammar} onWordClick={() => {}} onGrammarClick={() => {}} />)
+    render(<FuriganaText tokens={tokens} vocabulary={vocabulary} grammar={grammar} onWordClick={() => {}} onGrammarClick={() => {}} showFurigana />)
     expect(document.querySelectorAll('rt')).toHaveLength(1)
+  })
+
+  it('hides furigana by default', () => {
+    render(<FuriganaText tokens={tokens} vocabulary={vocabulary} grammar={grammar} onWordClick={() => {}} onGrammarClick={() => {}} />)
+    expect(screen.queryByText('にほんご')).not.toBeInTheDocument()
+    expect(document.querySelectorAll('rt')).toHaveLength(0)
   })
 
   it('calls onWordClick with vocab entry and position when word token clicked', () => {

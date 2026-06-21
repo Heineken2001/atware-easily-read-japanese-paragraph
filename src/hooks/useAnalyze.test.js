@@ -11,6 +11,7 @@ vi.mock("openai", () => ({
 }));
 
 const mockResult = {
+  translation: "Tôi đang học tiếng Nhật.",
   tokens: [
     { text: "日本語", reading: "にほんご", wordId: "w1", grammarId: null },
   ],

@@ -5,12 +5,14 @@ import { parseResponse } from "../utils/parseResponse";
 const SYSTEM_PROMPT = `You are a Japanese language teacher. Given a Japanese paragraph, analyze it and return ONLY a JSON object with this exact structure:
 
 {
+  "translation": "Vietnamese translation of the full paragraph",
   "tokens": [{ "text": "string", "reading": "hiragana or null", "wordId": "wN or null", "grammarId": "gN or null" }],
   "vocabulary": [{ "id": "wN", "word": "string", "reading": "hiragana", "meaning": "Vietnamese meaning", "examples": ["Japanese → Vietnamese", "Japanese → Vietnamese"] }],
   "grammar": [{ "id": "gN", "pattern": "〜pattern", "explanation": "Vietnamese explanation", "example": "Japanese → Vietnamese" }]
 }
 
 Rules:
+- "translation": write one natural Vietnamese translation for the entire paragraph
 - "reading": provide hiragana only for tokens containing kanji; null for pure hiragana/katakana/punctuation
 - "wordId": assign to meaningful vocabulary (nouns, verbs, adjectives, adverbs); null for particles/punctuation
 - "grammarId": assign to tokens forming a grammar pattern (〜ています, 〜ので, 〜たい, etc.); null otherwise

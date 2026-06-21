@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { parseResponse } from './parseResponse'
 
 const valid = {
+  translation: 'Tôi đang học tiếng Nhật.',
   tokens: [
     { text: '日本語', reading: 'にほんご', wordId: 'w1', grammarId: null },
     { text: 'を', reading: null, wordId: null, grammarId: null },
@@ -18,9 +19,14 @@ const valid = {
 describe('parseResponse', () => {
   it('returns data unchanged when valid', () => {
     const result = parseResponse(valid)
+    expect(result.translation).toBe('Tôi đang học tiếng Nhật.')
     expect(result.tokens).toHaveLength(3)
     expect(result.vocabulary).toHaveLength(1)
     expect(result.grammar).toHaveLength(1)
+  })
+
+  it('throws when translation is missing', () => {
+    expect(() => parseResponse({ ...valid, translation: undefined })).toThrow('Invalid response format')
   })
 
   it('throws when tokens is missing', () => {
