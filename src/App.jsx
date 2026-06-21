@@ -7,8 +7,8 @@ import GrammarPanel from "./components/GrammarPanel";
 
 function errorMessage(error) {
   if (error === "TEXT_TOO_LONG")
-    return "Đoạn văn quá dài, vui lòng thử đoạn ngắn hơn.";
-  return `Có lỗi xảy ra: ${error}. Vui lòng thử lại.`;
+    return "The paragraph is too long. Please try a shorter one.";
+  return `Something went wrong: ${error}. Please try again.`;
 }
 
 function StatPill({ label, value, tone }) {
@@ -41,7 +41,9 @@ function SectionTitle({ eyebrow, title, description }) {
       <h2 className="font-serif-jp text-2xl font-semibold text-[#2d241c]">
         {title}
       </h2>
-      {description && <p className="text-sm leading-6 text-[#6b5d4f]">{description}</p>}
+      {description && (
+        <p className="text-sm leading-6 text-[#6b5d4f]">{description}</p>
+      )}
     </div>
   );
 }
@@ -92,10 +94,7 @@ export default function App() {
   }
 
   return (
-    <div
-      className="japanese-paper min-h-screen"
-      onClick={() => setPopup(null)}
-    >
+    <div className="japanese-paper min-h-screen" onClick={() => setPopup(null)}>
       <header className="border-b border-[#d9ccb8] bg-[rgba(255,249,240,0.88)] px-6 py-5 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -106,23 +105,26 @@ export default function App() {
               Japanese Easy Read
             </h1>
             <p className="mt-2 text-sm leading-6 text-[#6b5d4f]">
-              Furigana, dịch nghĩa và giải thích ngữ pháp trên cùng một màn
-              hình.
+              Furigana, translation, and grammar notes in one place.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <StatPill
-              label="Từ vựng"
+              label="Vocabulary"
               value={result?.vocabulary.length ?? 0}
               tone="blue"
             />
             <StatPill
-              label="Ngữ pháp"
+              label="Grammar"
               value={result?.grammar.length ?? 0}
               tone="amber"
             />
-            <StatPill label="Ký tự" value={text.trim().length} tone="slate" />
+            <StatPill
+              label="Characters"
+              value={text.trim().length}
+              tone="slate"
+            />
           </div>
         </div>
       </header>
@@ -132,16 +134,16 @@ export default function App() {
           <div className="grid gap-6 px-5 py-5 lg:grid-cols-[1.2fr_0.8fr] lg:px-7 lg:py-6">
             <div className="space-y-4">
               <SectionTitle
-                eyebrow="Nhập đoạn văn"
-                title="Dán đoạn tiếng Nhật cần phân tích"
-                description="Ứng dụng sẽ thêm furigana, dịch nghĩa toàn đoạn và tách phần từ vựng, ngữ pháp để bạn đọc nhanh hơn."
+                eyebrow="Input"
+                title="Paste Japanese text to analyze"
+                description="The app adds furigana, a full translation, and separate vocabulary and grammar breakdowns for faster reading."
               />
 
               <div className="rounded-[28px] border border-[#ddd1bf] bg-[rgba(255,252,247,0.96)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)]">
                 <textarea
                   className="min-h-36 w-full resize-none rounded-[22px] border border-[#d9ccb8] bg-[linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(251,245,236,0.96))] px-4 py-4 text-lg leading-8 text-[#2f261f] outline-none transition focus:border-[#b6402c] focus:ring-4 focus:ring-[rgba(182,64,44,0.12)]"
                   rows={4}
-                  placeholder="Nhập đoạn văn tiếng Nhật..."
+                  placeholder="Paste a Japanese paragraph..."
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                 />
@@ -153,8 +155,8 @@ export default function App() {
                 {loading && <LoadingIndicator />}
                 <p className="text-sm leading-6 text-[#5f5144]">
                   {loading
-                    ? "Đang phân tích câu và tạo bản dịch..."
-                    : "Dán đoạn văn rồi bấm Phân tích để xem bản đọc, bản dịch và giải thích chi tiết."}
+                    ? "Analyzing the text and preparing the translation..."
+                    : "Paste your text, then click Analyze to see reading help, translation, and detailed notes."}
                 </p>
               </div>
               <button
@@ -165,10 +167,10 @@ export default function App() {
                 {loading ? (
                   <span className="inline-flex items-center gap-2">
                     <span className="loading-button-shimmer" />
-                    Đang phân tích...
+                    Analyzing...
                   </span>
                 ) : (
-                  "Phân tích"
+                  "Analyze"
                 )}
               </button>
             </div>
@@ -193,9 +195,9 @@ export default function App() {
                 <div className="relative space-y-5">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <SectionTitle
-                      eyebrow="Đọc"
-                      title="Đoạn văn phân tích"
-                      description="Bấm vào từ để xem nghĩa nhanh, hoặc bấm vào phần ngữ pháp được gạch chân để xem giải thích chi tiết."
+                      eyebrow="Reading"
+                      title="Annotated paragraph"
+                      description="Click a word for quick meaning lookup, or click underlined grammar to view the detailed note."
                     />
 
                     <button
@@ -204,7 +206,7 @@ export default function App() {
                       className={`inline-flex items-center justify-center rounded-full border px-4 py-2 text-sm font-medium transition ${showFurigana ? "border-[#b0c0ce] bg-[rgba(44,75,108,0.1)] text-[#26435f]" : "border-[#d8ccb9] bg-[rgba(255,252,247,0.92)] text-[#5f5144] hover:border-[#bfaa90] hover:text-[#2d241c]"}`}
                       onClick={() => setShowFurigana((current) => !current)}
                     >
-                      {showFurigana ? "Ẩn furigana" : "Hiện furigana"}
+                      {showFurigana ? "Hide furigana" : "Show furigana"}
                     </button>
                   </div>
 
@@ -230,9 +232,9 @@ export default function App() {
 
               <div className="japanese-panel rounded-[32px] p-6">
                 <SectionTitle
-                  eyebrow="Dịch nghĩa"
-                  title="Bản dịch toàn đoạn"
-                  description="Diễn đạt tự nhiên bằng tiếng Việt để bạn nắm ý chính trước khi học sâu hơn."
+                  eyebrow="Translation"
+                  title="Full paragraph translation"
+                  description="A natural Vietnamese rendering so you can grasp the overall meaning before diving deeper."
                 />
                 <div className="mt-5 rounded-[26px] border border-[#e6d7c3] bg-[linear-gradient(180deg,_rgba(255,250,243,0.98),_rgba(255,255,255,0.96))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)]">
                   <p className="font-serif-jp text-[1.02rem] leading-8 text-[#3a3027]">
@@ -245,22 +247,22 @@ export default function App() {
             <div className="japanese-panel overflow-hidden rounded-[32px]">
               <div className="border-b border-[#e6d7c3] px-6 pt-6">
                 <SectionTitle
-                  eyebrow="Phân tích chi tiết"
-                  title="Từ vựng và ngữ pháp"
-                  description="Danh sách được đồng bộ với phần đọc để bạn chuyển qua lại nhanh hơn."
+                  eyebrow="Details"
+                  title="Vocabulary and grammar"
+                  description="The lists stay synced with the reading view so you can move back and forth quickly."
                 />
                 <div className="mt-5 flex rounded-full border border-[#e2d5c3] bg-[rgba(244,237,226,0.9)] p-1.5">
                   <button
                     className={`flex-1 rounded-full px-4 py-3 text-sm font-medium transition ${activeTab === "vocab" ? "bg-[rgba(255,252,247,0.98)] text-[#26435f] shadow-sm" : "text-[#7d6d5a] hover:text-[#2d241c]"}`}
                     onClick={() => setActiveTab("vocab")}
                   >
-                    Từ vựng
+                    Vocabulary
                   </button>
                   <button
                     className={`flex-1 rounded-full px-4 py-3 text-sm font-medium transition ${activeTab === "grammar" ? "bg-[rgba(255,252,247,0.98)] text-[#9a4a3a] shadow-sm" : "text-[#7d6d5a] hover:text-[#2d241c]"}`}
                     onClick={() => setActiveTab("grammar")}
                   >
-                    Ngữ pháp
+                    Grammar
                   </button>
                 </div>
               </div>

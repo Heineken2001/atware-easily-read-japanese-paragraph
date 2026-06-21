@@ -59,13 +59,15 @@ beforeEach(() => {
 describe("App", () => {
   it("renders the textarea and Phân tích button", () => {
     render(<App />);
-    expect(screen.getByPlaceholderText(/nhập đoạn văn/i)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /phân tích/i }),
+      screen.getByPlaceholderText(/paste a japanese paragraph/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /analyze/i }),
     ).toBeInTheDocument();
   });
 
-  it("shows Đang phân tích... while loading", async () => {
+  it("shows Analyzing... while loading", async () => {
     let resolveReq;
     mockCreate.mockImplementation(
       () =>
@@ -83,11 +85,14 @@ describe("App", () => {
         }),
     );
     render(<App />);
-    fireEvent.change(screen.getByPlaceholderText(/nhập đoạn văn/i), {
-      target: { value: "日本語" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /phân tích/i }));
-    expect(screen.getByText("Đang phân tích...")).toBeInTheDocument();
+    fireEvent.change(
+      screen.getByPlaceholderText(/paste a japanese paragraph/i),
+      {
+        target: { value: "日本語" },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: /analyze/i }));
+    expect(screen.getByText("Analyzing...")).toBeInTheDocument();
     await act(async () => {
       resolveReq();
     });
@@ -95,38 +100,47 @@ describe("App", () => {
 
   it("keeps furigana hidden by default after successful analysis", async () => {
     render(<App />);
-    fireEvent.change(screen.getByPlaceholderText(/nhập đoạn văn/i), {
-      target: { value: "日本語" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /phân tích/i }));
+    fireEvent.change(
+      screen.getByPlaceholderText(/paste a japanese paragraph/i),
+      {
+        target: { value: "日本語" },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: /analyze/i }));
     await waitFor(() => expect(screen.getByText("日本語")).toBeInTheDocument());
     expect(document.querySelectorAll("rt")).toHaveLength(0);
   });
 
   it("shows furigana when the toggle is enabled", async () => {
     render(<App />);
-    fireEvent.change(screen.getByPlaceholderText(/nhập đoạn văn/i), {
-      target: { value: "日本語" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /phân tích/i }));
+    fireEvent.change(
+      screen.getByPlaceholderText(/paste a japanese paragraph/i),
+      {
+        target: { value: "日本語" },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: /analyze/i }));
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: /hiện furigana/i }),
+        screen.getByRole("button", { name: /show furigana/i }),
       ).toBeInTheDocument(),
     );
-    fireEvent.click(screen.getByRole("button", { name: /hiện furigana/i }));
+    fireEvent.click(screen.getByRole("button", { name: /show furigana/i }));
     expect(document.querySelector("rt")?.textContent).toBe("にほんご");
   });
 
-  it("shows Có lỗi xảy ra on generic failure", async () => {
+  it("shows a generic error on failure", async () => {
     mockCreate.mockRejectedValue(new Error("network failure"));
     render(<App />);
-    fireEvent.change(screen.getByPlaceholderText(/nhập đoạn văn/i), {
-      target: { value: "日本語" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /phân tích/i }));
+    fireEvent.change(
+      screen.getByPlaceholderText(/paste a japanese paragraph/i),
+      {
+        target: { value: "日本語" },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: /analyze/i }));
     await waitFor(() =>
-      expect(screen.getByText(/có lỗi xảy ra/i)).toBeInTheDocument(),
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument(),
     );
   });
 
@@ -135,42 +149,54 @@ describe("App", () => {
     err.code = "context_length_exceeded";
     mockCreate.mockRejectedValue(err);
     render(<App />);
-    fireEvent.change(screen.getByPlaceholderText(/nhập đoạn văn/i), {
-      target: { value: "日本語" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /phân tích/i }));
+    fireEvent.change(
+      screen.getByPlaceholderText(/paste a japanese paragraph/i),
+      {
+        target: { value: "日本語" },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: /analyze/i }));
     await waitFor(() =>
-      expect(screen.getByText(/quá dài/i)).toBeInTheDocument(),
+      expect(screen.getByText(/too long/i)).toBeInTheDocument(),
     );
   });
 
-  it("displays vocabulary in Từ vựng tab by default after analysis", async () => {
+  it("displays vocabulary in the Vocabulary tab by default after analysis", async () => {
     render(<App />);
-    fireEvent.change(screen.getByPlaceholderText(/nhập đoạn văn/i), {
-      target: { value: "日本語" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /phân tích/i }));
+    fireEvent.change(
+      screen.getByPlaceholderText(/paste a japanese paragraph/i),
+      {
+        target: { value: "日本語" },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: /analyze/i }));
     await waitFor(() => screen.getByText("tiếng Nhật"));
     expect(screen.getByText("tiếng Nhật")).toBeInTheDocument();
   });
 
   it("renders the paragraph translation after analysis", async () => {
     render(<App />);
-    fireEvent.change(screen.getByPlaceholderText(/nhập đoạn văn/i), {
-      target: { value: "日本語をしています" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /phân tích/i }));
+    fireEvent.change(
+      screen.getByPlaceholderText(/paste a japanese paragraph/i),
+      {
+        target: { value: "日本語をしています" },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: /analyze/i }));
     await waitFor(() =>
       expect(screen.getByText("Tôi đang học tiếng Nhật.")).toBeInTheDocument(),
     );
   });
 
-  it("switches to Ngữ pháp tab when grammar token is clicked", async () => {
+  it("switches to the Grammar tab when a grammar token is clicked", async () => {
     render(<App />);
-    fireEvent.change(screen.getByPlaceholderText(/nhập đoạn văn/i), {
-      target: { value: "日本語" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /phân tích/i }));
+    fireEvent.change(
+      screen.getByPlaceholderText(/paste a japanese paragraph/i),
+      {
+        target: { value: "日本語" },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: /analyze/i }));
     await waitFor(() => screen.getByText("しています"));
     fireEvent.click(screen.getByText("しています"));
     expect(screen.getByText("〜しています")).toBeInTheDocument();
