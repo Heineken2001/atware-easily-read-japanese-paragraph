@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAnalyze } from "./hooks/useAnalyze";
+import { useOcr } from "./hooks/useOcr";
 import FuriganaText from "./components/FuriganaText";
 import WordPopup from "./components/WordPopup";
 import VocabPanel from "./components/VocabPanel";
@@ -64,6 +65,115 @@ function LoadingIndicator() {
   );
 }
 
+function ImageInput({ onImageSelected, loading, preview, error }) {
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    function handleGlobalPaste(e) {
+      const item = [...(e.clipboardData?.items ?? [])].find((i) =>
+        i.type.startsWith("image/")
+      );
+      if (!item) return;
+      e.preventDefault();
+      const file = item.getAsFile();
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => onImageSelected(ev.target.result);
+      reader.readAsDataURL(file);
+    }
+    document.addEventListener("paste", handleGlobalPaste);
+    return () => document.removeEventListener("paste", handleGlobalPaste);
+  }, [onImageSelected]);
+
+  function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => onImageSelected(ev.target.result);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  return (
+    <div className="rounded-[28px] border border-[#ddd1bf] bg-[rgba(255,252,247,0.96)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)]">
+      <div className="min-h-36 rounded-[22px] border-2 border-dashed border-[#d9ccb8] flex flex-col items-center justify-center gap-3 p-6">
+        {preview ? (
+          <div className="relative">
+            <img
+              src={preview}
+              alt="Preview"
+              className="max-h-32 rounded-lg object-contain shadow-sm"
+            />
+            {loading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg bg-white/70">
+                <LoadingIndicator />
+                <p className="text-xs text-[#6b5d4f]">Extracting text...</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-10 h-10 text-[#c4b09a]"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+            <div className="text-center">
+              <p className="text-sm font-medium text-[#5f5144]">
+                Paste a screenshot here
+              </p>
+              <p className="mt-1 text-xs text-[#9a8a7a]">
+                Press Ctrl+V / Cmd+V anywhere on this page
+              </p>
+            </div>
+          </>
+        )}
+        {error && (
+          <p className="text-xs text-[#9d3524]">Failed to extract: {error}</p>
+        )}
+      </div>
+
+      <button
+        type="button"
+        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d9ccb8] bg-[rgba(255,252,247,0.96)] px-4 py-2.5 text-sm text-[#5f5144] transition hover:border-[#b6402c] hover:text-[#9a4a3a]"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="w-4 h-4"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+        Choose from photo library
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
   const [text, setText] = useState("");
   const [activeTab, setActiveTab] = useState("vocab");
@@ -71,7 +181,10 @@ export default function App() {
   const [activeGrammarId, setActiveGrammarId] = useState(null);
   const [popup, setPopup] = useState(null);
   const [showFurigana, setShowFurigana] = useState(false);
+  const [inputMode, setInputMode] = useState("text");
+  const [imagePreview, setImagePreview] = useState(null);
   const { result, loading, error, analyze } = useAnalyze();
+  const { extractText, loading: ocrLoading, error: ocrError } = useOcr();
 
   function handleAnalyze() {
     if (!text.trim()) return;
@@ -82,9 +195,15 @@ export default function App() {
   }
 
   function handleWordClick(vocabEntry, position) {
+    const popupWidth = 320;
+    const margin = 8;
+    const x = Math.max(
+      margin,
+      Math.min(position.x, window.innerWidth - popupWidth - margin)
+    );
     setActiveWordId(vocabEntry.id);
     setActiveTab("vocab");
-    setPopup({ word: vocabEntry, position });
+    setPopup({ word: vocabEntry, position: { x, y: position.y } });
   }
 
   function handleGrammarClick(grammarId) {
@@ -93,8 +212,29 @@ export default function App() {
     setPopup(null);
   }
 
+  const handleImageSelected = useCallback(
+    async (dataUrl) => {
+      setImagePreview(dataUrl);
+      const extracted = await extractText(dataUrl);
+      if (extracted) {
+        setText(extracted);
+        setInputMode("text");
+        setImagePreview(null);
+      }
+    },
+    [extractText]
+  );
+
   return (
     <div className="japanese-paper min-h-screen" onClick={() => setPopup(null)}>
+      {popup && (
+        <WordPopup
+          word={popup.word}
+          position={popup.position}
+          onClose={() => setPopup(null)}
+        />
+      )}
+
       <header className="border-b border-[#d9ccb8] bg-[rgba(255,249,240,0.88)] px-6 py-5 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -139,15 +279,39 @@ export default function App() {
                 description="The app adds furigana, a full translation, and separate vocabulary and grammar breakdowns for faster reading."
               />
 
-              <div className="rounded-[28px] border border-[#ddd1bf] bg-[rgba(255,252,247,0.96)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)]">
-                <textarea
-                  className="min-h-36 w-full resize-none rounded-[22px] border border-[#d9ccb8] bg-[linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(251,245,236,0.96))] px-4 py-4 text-lg leading-8 text-[#2f261f] outline-none transition focus:border-[#b6402c] focus:ring-4 focus:ring-[rgba(182,64,44,0.12)]"
-                  rows={4}
-                  placeholder="Paste a Japanese paragraph..."
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                />
+              <div className="flex rounded-full border border-[#e2d5c3] bg-[rgba(244,237,226,0.9)] p-1">
+                <button
+                  className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${inputMode === "text" ? "bg-[rgba(255,252,247,0.98)] text-[#26435f] shadow-sm" : "text-[#7d6d5a] hover:text-[#2d241c]"}`}
+                  onClick={() => setInputMode("text")}
+                >
+                  Text
+                </button>
+                <button
+                  className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${inputMode === "image" ? "bg-[rgba(255,252,247,0.98)] text-[#26435f] shadow-sm" : "text-[#7d6d5a] hover:text-[#2d241c]"}`}
+                  onClick={() => setInputMode("image")}
+                >
+                  Image
+                </button>
               </div>
+
+              {inputMode === "text" ? (
+                <div className="rounded-[28px] border border-[#ddd1bf] bg-[rgba(255,252,247,0.96)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)]">
+                  <textarea
+                    className="min-h-36 w-full resize-none rounded-[22px] border border-[#d9ccb8] bg-[linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(251,245,236,0.96))] px-4 py-4 text-lg leading-8 text-[#2f261f] outline-none transition focus:border-[#b6402c] focus:ring-4 focus:ring-[rgba(182,64,44,0.12)]"
+                    rows={4}
+                    placeholder="Paste a Japanese paragraph..."
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                  />
+                </div>
+              ) : (
+                <ImageInput
+                  onImageSelected={handleImageSelected}
+                  loading={ocrLoading}
+                  preview={imagePreview}
+                  error={ocrError}
+                />
+              )}
             </div>
 
             <div className="flex flex-col justify-end px-2 py-2 lg:px-6 lg:py-4">
@@ -188,7 +352,7 @@ export default function App() {
             <div className="space-y-5">
               <div
                 className="japanese-panel relative overflow-hidden rounded-[32px] p-6"
-                onClick={(e) => e.stopPropagation()}
+                onClick={() => setPopup(null)}
               >
                 <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(135deg,_rgba(182,64,44,0.12),_rgba(44,75,108,0.08)_58%,_transparent)]" />
                 <div className="absolute right-6 top-6 h-16 w-16 rounded-full border border-[#e6d7c3] bg-[radial-gradient(circle,_rgba(182,64,44,0.08),_transparent_68%)]" />
@@ -204,7 +368,10 @@ export default function App() {
                       type="button"
                       aria-pressed={showFurigana}
                       className={`inline-flex items-center justify-center rounded-full border px-4 py-2 text-sm font-medium transition ${showFurigana ? "border-[#b0c0ce] bg-[rgba(44,75,108,0.1)] text-[#26435f]" : "border-[#d8ccb9] bg-[rgba(255,252,247,0.92)] text-[#5f5144] hover:border-[#bfaa90] hover:text-[#2d241c]"}`}
-                      onClick={() => setShowFurigana((current) => !current)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowFurigana((current) => !current);
+                      }}
                     >
                       {showFurigana ? "Hide furigana" : "Show furigana"}
                     </button>
@@ -221,13 +388,6 @@ export default function App() {
                     />
                   </div>
                 </div>
-                {popup && (
-                  <WordPopup
-                    word={popup.word}
-                    position={popup.position}
-                    onClose={() => setPopup(null)}
-                  />
-                )}
               </div>
 
               <div className="japanese-panel rounded-[32px] p-6">
