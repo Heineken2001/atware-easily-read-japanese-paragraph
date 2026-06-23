@@ -67,6 +67,7 @@ function LoadingIndicator() {
 
 function ImageInput({ onImageSelected, loading, preview, error }) {
   const fileInputRef = useRef(null);
+  const [clipboardError, setClipboardError] = useState(null);
 
   useEffect(() => {
     function handleGlobalPaste(e) {
@@ -93,6 +94,28 @@ function ImageInput({ onImageSelected, loading, preview, error }) {
     reader.readAsDataURL(file);
     e.target.value = "";
   }
+
+  async function handleClipboardPaste() {
+    setClipboardError(null);
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const imageType = item.types.find((t) => t.startsWith("image/"));
+        if (imageType) {
+          const blob = await item.getType(imageType);
+          const reader = new FileReader();
+          reader.onload = (e) => onImageSelected(e.target.result);
+          reader.readAsDataURL(blob);
+          return;
+        }
+      }
+      setClipboardError("No image found in clipboard.");
+    } catch {
+      setClipboardError("Clipboard access denied. Please allow access and try again.");
+    }
+  }
+
+  const canUseClipboardAPI = !!navigator.clipboard?.read;
 
   return (
     <div className="rounded-[28px] border border-[#ddd1bf] bg-[rgba(255,252,247,0.96)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)]">
@@ -137,39 +160,66 @@ function ImageInput({ onImageSelected, loading, preview, error }) {
             </div>
           </>
         )}
-        {error && (
-          <p className="text-xs text-[#9d3524]">Failed to extract: {error}</p>
+        {(error || clipboardError) && (
+          <p className="text-xs text-[#9d3524]">
+            {clipboardError ?? `Failed to extract: ${error}`}
+          </p>
         )}
       </div>
 
-      <button
-        type="button"
-        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d9ccb8] bg-[rgba(255,252,247,0.96)] px-4 py-2.5 text-sm text-[#5f5144] transition hover:border-[#b6402c] hover:text-[#9a4a3a]"
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="w-4 h-4"
+      <div className="mt-3 flex flex-col gap-2">
+        {canUseClipboardAPI && (
+          <button
+            type="button"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d9ccb8] bg-[rgba(255,252,247,0.96)] px-4 py-2.5 text-sm text-[#5f5144] transition hover:border-[#b6402c] hover:text-[#9a4a3a]"
+            onClick={handleClipboardPaste}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-4 h-4"
+            >
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+            </svg>
+            Paste from clipboard
+          </button>
+        )}
+
+        <button
+          type="button"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d9ccb8] bg-[rgba(255,252,247,0.96)] px-4 py-2.5 text-sm text-[#5f5144] transition hover:border-[#b6402c] hover:text-[#9a4a3a]"
+          onClick={() => fileInputRef.current?.click()}
         >
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <polyline points="21 15 16 10 5 21" />
-        </svg>
-        Choose from photo library
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleFileChange}
-        />
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="w-4 h-4"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          Choose from photo library
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+        </button>
+      </div>
     </div>
   );
 }
@@ -226,8 +276,8 @@ export default function App() {
       const extracted = await extractText(dataUrl);
       if (extracted) {
         setText(extracted);
-        setInputMode("text");
         setImagePreview(null);
+        setInputMode("text");
       }
     },
     [extractText]

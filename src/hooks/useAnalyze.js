@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import OpenAI from "openai";
 import { parseResponse } from "../utils/parseResponse";
 
@@ -46,7 +46,7 @@ export function useAnalyze() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  async function analyze(text) {
+  const analyze = useCallback(async function analyze(text) {
     setLoading(true);
     setError(null);
     try {
@@ -80,7 +80,7 @@ export function useAnalyze() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []); // setLoading/setError/setResult are stable useState setters
 
   return { result, loading, error, analyze };
 }
