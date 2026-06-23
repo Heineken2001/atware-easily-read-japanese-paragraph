@@ -175,7 +175,9 @@ function ImageInput({ onImageSelected, loading, preview, error }) {
 }
 
 export default function App() {
-  const [text, setText] = useState("");
+  const [text, setText] = useState(
+    () => localStorage.getItem("jer-text") ?? ""
+  );
   const [activeTab, setActiveTab] = useState("vocab");
   const [activeWordId, setActiveWordId] = useState(null);
   const [activeGrammarId, setActiveGrammarId] = useState(null);
@@ -184,6 +186,12 @@ export default function App() {
   const [inputMode, setInputMode] = useState("text");
   const [imagePreview, setImagePreview] = useState(null);
   const { result, loading, error, analyze } = useAnalyze();
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("jer-text", text);
+    } catch {}
+  }, [text]);
   const { extractText, loading: ocrLoading, error: ocrError } = useOcr();
 
   function handleAnalyze() {

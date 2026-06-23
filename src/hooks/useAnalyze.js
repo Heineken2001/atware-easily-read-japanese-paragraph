@@ -32,8 +32,17 @@ function createClient() {
   });
 }
 
+const STORAGE_KEY = "jer-result";
+
 export function useAnalyze() {
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -57,7 +66,11 @@ export function useAnalyze() {
       }
 
       const data = JSON.parse(content);
-      setResult(parseResponse(data));
+      const parsed = parseResponse(data);
+      setResult(parsed);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      } catch {}
     } catch (e) {
       const isTooLong =
         e?.code === "context_length_exceeded" ||
